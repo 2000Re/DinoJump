@@ -2,54 +2,78 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Mosaic Focus Timer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mosaic Focus Timer - Infinite Portal</title>
     <style>
-        body, html {
-            margin: 0; padding: 0; height: 100%; width: 100%;
-            overflow: hidden; background: #000;
-            font-family: 'Inter', sans-serif;
+        :root {
+            --bg-color: #000;
+            --cell-default: #111;
+            --transition-speed: 0.6s;
         }
 
-        /* グリッドコンテナ */
+        body, html {
+            margin: 0; padding: 0; height: 100%; width: 100%;
+            overflow: hidden; background: var(--bg-color);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        /* グリッドレイアウト */
         #grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
             grid-auto-rows: minmax(80px, 1fr);
             width: 100vw;
             height: 100vh;
-            gap: 2px; /* 正方形の隙間 */
+            gap: 2px;
         }
 
         .cell {
             width: 100%;
             height: 100%;
-            transition: background-color 2s ease; /* 色の変化を滑らかに */
-            background-color: #111;
+            background-color: var(--cell-default);
+            transition: background-color 2s ease, transform var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            z-index: 1;
         }
 
+        /* 拡大演出 */
+        .cell.zoom-active {
+            z-index: 9999 !important;
+            transform: scale(50); /* 画面を完全に覆う */
+            pointer-events: none;
+        }
+
+        /* 中央UI */
         #ui {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             color: white;
             text-align: center;
-            pointer-events: none; /* UIの下のクリックを通すため */
+            pointer-events: none;
             z-index: 100;
+            transition: opacity 0.5s;
         }
 
         h1 {
-            font-size: 5rem;
+            font-size: clamp(2rem, 10vw, 5rem);
             margin: 0;
             letter-spacing: 1rem;
             font-weight: 100;
             text-shadow: 0 0 20px rgba(0,0,0,0.8);
         }
 
-        .clickable-area {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            cursor: pointer;
-            z-index: 10;
+        #status {
+            font-size: 0.8rem;
+            letter-spacing: 0.2rem;
+            text-transform: uppercase;
+            opacity: 0.5;
+            margin-top: 10px;
+        }
+
+        .fade-out {
+            opacity: 0;
         }
     </style>
 </head>
@@ -59,23 +83,65 @@
     
     <div id="ui">
         <h1 id="label">FOCUS</h1>
-        <p id="status">Click anywhere to start</p>
+        <p id="status">Click a square to discover</p>
     </div>
-
-    <div class="clickable-area" onclick="toggleTimer()"></div>
 
     <script>
         const grid = document.getElementById('grid');
-        const label = document.getElementById('label');
+        const ui = document.getElementById('ui');
         const status = document.getElementById('status');
         
         let isRunning = false;
-        let mode = 'FOCUS';
         let cells = [];
 
-        // 1. 画面いっぱいに正方形を生成
+// ==========================================
+// 設定エリア（拡張版）
+// ==========================================
+const ASSOCIATE_ID = "mft041-22"; 
+
+// どのジャンルでも使いやすい形容詞
+const adjectives = [
+    // 汎用・スタイル
+    "minimalist", "retro", "portable", "smart", "premium", "industrial", "wooden", "high+end",
+    // 機能性
+    "ergonomic", "mechanical", "wireless", "silent", "heavy+duty", "compact", "waterproof",
+    // 素材感
+    "aluminum", "carbon+fiber", "stainless+steel", "titanium", "bamboo"
+];
+
+// ジャンルを横断した名詞
+const nouns = [
+    // デスク・ガジェット
+    "keyboard", "mouse", "monitor+arm", "desk+mat", "webcam", "laptop+stand", "usb+hub", "stream+deck",
+    // キッチン
+    "coffee+maker", "electric+kettle", "mug+warmer", "knife+set", "spice+rack", "blender", "air+fryer",
+    // キャンプ・アウトドア
+    "lantern", "folding+chair", "cookware+set", "backpack", "sleeping+bag", "multi+tool", "stove",
+    // フィットネス・健康
+    "yoga+mat", "dumbbell", "massage+gun", "smart+watch", "foam+roller", "balance+board", "resistance+bands"
+];
+
+// 特定のジャンルを狙い撃ちするバックアップテーマ
+const backupThemes = [
+    "desk+setup", "productivity+tools", "minimalist+gadgets",
+    "dream+kitchen", "camping+gear", "home+gym", "outdoor+living", "coffee+life"
+];
+// ==========================================
+
+        function generateRandomKeyword() {
+            // 80%の確率で 組み合わせ、20%で単一テーマ
+            if (Math.random() > 0.2) {
+                const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+                const noun = nouns[Math.floor(Math.random() * nouns.length)];
+                return `${adj}+${noun}`;
+            } else {
+                return backupThemes[Math.floor(Math.random() * backupThemes.length)];
+            }
+        }
+
         function createGrid() {
             grid.innerHTML = '';
+            cells = [];
             const cellWidth = 80;
             const columns = Math.ceil(window.innerWidth / cellWidth);
             const rows = Math.ceil(window.innerHeight / cellWidth);
@@ -84,42 +150,59 @@
             for (let i = 0; i < totalCells; i++) {
                 const cell = document.createElement('div');
                 cell.className = 'cell';
+                cell.onclick = () => handlePortalClick(cell);
                 grid.appendChild(cell);
                 cells.push(cell);
             }
         }
 
-        // 2. セルの色をランダムに変える関数
+        function handlePortalClick(cell) {
+            if (!isRunning) {
+                isRunning = true;
+                status.innerText = "Scanning the grid...";
+                return;
+            }
+
+            // 拡大とUI消去
+            cell.classList.add('zoom-active');
+            ui.classList.add('fade-out');
+
+            // 遷移先の準備
+            const keyword = generateRandomKeyword();
+            const targetUrl = `https://www.amazon.co.jp/s?k=${keyword}&tag=${ASSOCIATE_ID}`;
+
+            // 0.6秒（アニメーションの山場）で別タブを開く
+            setTimeout(() => {
+                window.open(targetUrl, '_blank');
+                
+                // 1秒後に元の状態に復帰させる（連続でクリックできるように）
+                setTimeout(() => {
+                    cell.classList.remove('zoom-active');
+                    ui.classList.remove('fade-out');
+                }, 1000);
+            }, 600);
+        }
+
         function updateCells() {
+            if (!isRunning) return;
+
             cells.forEach(cell => {
-                // 走っている時だけランダムに色を変える
-                if (isRunning) {
-                    // 10%の確率でそのセルの色を更新（パラパラ感を出す）
-                    if (Math.random() > 0.8) {
-                        const baseHue = mode === 'FOCUS' ? 200 : 120; // 集中は青系、休憩は緑系
-                        const h = baseHue + (Math.random() * 60 - 30); // 色相を散らす
-                        const s = 40 + (Math.random() * 40);
-                        const l = 10 + (Math.random() * 30);
-                        cell.style.backgroundColor = `hsl(${h}, ${s}%, ${l}%)`;
-                    }
-                } else {
-                    // 停止中は暗いグレーに
-                    cell.style.backgroundColor = '#111';
+                if (Math.random() > 0.85) {
+                    const h = 200 + (Math.random() * 40 - 20); // Focus Blue
+                    const s = 30 + (Math.random() * 40);
+                    const l = 10 + (Math.random() * 25);
+                    cell.style.backgroundColor = `hsl(${h}, ${s}%, ${l}%)`;
                 }
             });
         }
 
-        function toggleTimer() {
-            isRunning = !isRunning;
-            status.innerText = isRunning ? "Deep in the grid..." : "Paused";
-            if(!isRunning) updateCells(); // 停止時にリセット
-        }
-
         // 初期化
         createGrid();
-        window.addEventListener('resize', createGrid);
+        window.addEventListener('resize', () => {
+            if (!document.querySelector('.zoom-active')) createGrid();
+        });
 
-        // 1秒ごとにセルを更新
+        // 演出ループ
         setInterval(updateCells, 1000);
 
     </script>
