@@ -1,238 +1,290 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solid Stack Widget</title>
+    <title>Dino Jump</title>
     <style>
         :root {
-            --primary: #007bff;
-            --card-shadow: 0 10px 35px rgba(0,0,0,0.2); /* 影をより深く、濃く設定 */
+            --bg-color: #f7f7f7;
+            --game-bg: white;
+            --text-color: #535353;
+            --dino-color: #535353;
+            --cactus-color: #535353;
+            --line-color: #535353;
+        }
+
+        .night-mode {
+            --bg-color: #202124;
+            --game-bg: #202124;
+            --text-color: #bdc1c6;
+            --dino-color: #bdc1c6;
+            --cactus-color: #bdc1c6;
+            --line-color: #bdc1c6;
         }
 
         body {
-            background-color: #e9ecef;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
+            flex-direction: column;
+            font-family: 'Courier New', Courier, monospace;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 1s;
+            user-select: none;
+        }
+
+        .game-container {
+            width: 600px;
+            height: 200px;
+            border-bottom: 2px solid var(--line-color);
             overflow: hidden;
-            font-family: 'Helvetica Neue', Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif;
-            overscroll-behavior-y: contain;
-        }
-
-        .stack-container {
             position: relative;
-            width: 320px;
-            height: 450px;
-            perspective: 1200px;
+            background-color: var(--game-bg);
+            transition: background-color 1s, border-color 1s;
         }
 
-        .card {
+        .score-container {
             position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 18px;
+            z-index: 20;
+        }
+
+        #billboard {
+            position: absolute;
+            bottom: 80px;
+            right: -150px;
+            width: 120px;
+            height: 50px;
+            background-color: #ff9900;
+            border: 2px solid var(--line-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            text-align: center;
+            animation: move-billboard 9s infinite linear;
+            z-index: 5;
+        }
+
+        @keyframes move-billboard {
+            0% { right: -150px; }
+            100% { right: 100%; }
+        }
+
+        /* --- 恐竜：スクリーンショット[1]を1ドットずつ完全再現 --- */
+        #dino {
+            width: 5px; 
+            height: 5px;
+            position: absolute;
+            bottom: 44px; /* 接地位置を微調整 */
+            left: 50px;
+            background: transparent;
+            box-shadow: 
+                /* 頭部 */
+                28px 0px var(--dino-color), 32px 0px var(--dino-color), 36px 0px var(--dino-color), 40px 0px var(--dino-color), 44px 0px var(--dino-color),
+                28px 4px var(--dino-color), 32px 4px transparent, 36px 4px var(--dino-color), 40px 4px var(--dino-color), 44px 4px var(--dino-color), /* 目 */
+                28px 8px var(--dino-color), 32px 8px var(--dino-color), 36px 8px var(--dino-color), 40px 8px var(--dino-color), 44px 8px var(--dino-color),
+                28px 12px var(--dino-color), 32px 12px var(--dino-color), 36px 12px var(--dino-color),
+                28px 16px var(--dino-color), 32px 16px var(--dino-color), 36px 16px var(--dino-color), 40px 16px var(--dino-color),
+                /* 首と胴体 */
+                20px 12px var(--dino-color), 24px 12px var(--dino-color),
+                16px 16px var(--dino-color), 20px 16px var(--dino-color), 24px 16px var(--dino-color),
+                12px 20px var(--dino-color), 16px 20px var(--dino-color), 20px 20px var(--dino-color), 24px 20px var(--dino-color), 28px 20px var(--dino-color),
+                8px 24px var(--dino-color), 12px 24px var(--dino-color), 16px 24px var(--dino-color), 20px 24px var(--dino-color), 24px 24px var(--dino-color), 28px 24px var(--dino-color),
+                4px 28px var(--dino-color), 8px 28px var(--dino-color), 12px 28px var(--dino-color), 16px 28px var(--dino-color), 20px 28px var(--dino-color), 24px 28px var(--dino-color),
+                4px 32px var(--dino-color), 8px 32px var(--dino-color), 12px 32px var(--dino-color), 16px 32px var(--dino-color), 20px 32px var(--dino-color),
+                /* 前足 */
+                28px 24px var(--dino-color), 28px 28px var(--dino-color), 32px 28px var(--dino-color),
+                /* 尻尾 */
+                0px 16px var(--dino-color),
+                0px 20px var(--dino-color), 4px 20px var(--dino-color),
+                4px 24px var(--dino-color), 8px 24px var(--dino-color),
+                /* 後足 */
+                12px 36px var(--dino-color), 16px 36px var(--dino-color),
+                12px 40px var(--dino-color), 20px 40px var(--dino-color);
+            z-index: 10;
+        }
+
+        .animate-jump {
+            animation: jump 0.5s linear;
+        }
+
+        @keyframes jump {
+            0% { transform: translateY(0); }
+            30% { transform: translateY(-100px); }
+            70% { transform: translateY(-100px); }
+            100% { transform: translateY(0); }
+        }
+
+        #cactus {
+            width: 5px; 
+            height: 5px;
+            position: absolute;
+            bottom: 38px; 
+            right: -24px;
+            background: transparent;
+            box-shadow: 
+                8px 0px var(--cactus-color), 12px 0px var(--cactus-color),
+                8px 4px var(--cactus-color), 12px 4px var(--cactus-color),
+                8px 8px var(--cactus-color), 12px 8px var(--cactus-color),
+                8px 12px var(--cactus-color), 12px 12px var(--cactus-color),
+                8px 16px var(--cactus-color), 12px 16px var(--cactus-color),
+                8px 20px var(--cactus-color), 12px 20px var(--cactus-color),
+                8px 24px var(--cactus-color), 12px 24px var(--cactus-color),
+                8px 28px var(--cactus-color), 12px 28px var(--cactus-color),
+                8px 32px var(--cactus-color), 12px 32px var(--cactus-color),
+                8px 36px var(--cactus-color), 12px 36px var(--cactus-color),
+                0px 8px var(--cactus-color), 4px 8px var(--cactus-color),
+                0px 12px var(--cactus-color), 4px 12px var(--cactus-color),
+                0px 16px var(--cactus-color), 4px 16px var(--cactus-color),
+                0px 20px var(--cactus-color), 4px 20px var(--cactus-color),
+                4px 24px var(--cactus-color), 8px 24px var(--cactus-color),
+                16px 12px var(--cactus-color), 20px 12px var(--cactus-color),
+                16px 16px var(--cactus-color), 20px 16px var(--cactus-color),
+                16px 20px var(--cactus-color), 20px 20px var(--cactus-color),
+                12px 24px var(--cactus-color), 16px 24px var(--cactus-color);
+            animation: move 1.6s infinite linear;
+            z-index: 10;
+        }
+
+        @keyframes move {
+            0% { right: -24px; }
+            100% { right: 100%; }
+        }
+
+        #game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            background: white;
-            border-radius: 28px;
-            /* 境界をはっきりさせるための影と薄いボーダー */
-            box-shadow: var(--card-shadow);
-            border: 1px solid rgba(0,0,0,0.08);
-            
-            transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
-            display: flex;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none; 
             flex-direction: column;
-            overflow: hidden;
-            backface-visibility: hidden;
-            will-change: transform, opacity;
-            
-            /* 【重要】透過を一切禁止 */
-            opacity: 1 !important; 
-        }
-
-        .card-img {
-            height: 200px;
-            display: flex;
-            align-items: center;
             justify-content: center;
-            font-weight: bold;
+            align-items: center;
             color: white;
-            font-size: 1.8rem;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .card-content {
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-            background: white;
-        }
-
-        h3 { margin: 0 0 10px 0; font-size: 1.2rem; color: #333; }
-        p { font-size: 0.9rem; color: #555; line-height: 1.5; margin: 0; }
-
-        .card-btn {
-            display: block;
-            background: var(--primary);
-            color: white;
-            text-align: center;
-            padding: 15px;
-            border-radius: 18px;
-            text-decoration: none;
-            margin-top: auto;
-            font-weight: bold;
-            transition: transform 0.2s;
-        }
-
-        .card-btn:active {
-            transform: scale(0.95);
-        }
-
-        /* 状態別スタイル：不透明度をすべて1に固定 */
-        /* 1番目（最前面） */
-        .card.pos-1 {
-            z-index: 3;
-            transform: translateZ(0) translateY(0);
-        }
-
-        /* 2番目（少し後ろ） */
-        .card.pos-2 {
-            z-index: 2;
-            transform: translateZ(-80px) translateY(30px);
-        }
-
-        /* 3番目（さらに後ろ） */
-        .card.pos-3 {
-            z-index: 1;
-            transform: translateZ(-160px) translateY(60px);
-        }
-
-        /* 待機中 */
-        .card.pos-hidden {
-            z-index: 0;
-            transform: translateZ(-240px) translateY(90px);
-            pointer-events: none;
-        }
-
-        /* めくられるアニメーション：不透明度1を維持 */
-        .card.exit-up {
-            z-index: 4;
-            transform: translateY(-140%) rotateX(20deg);
-        }
-
-        .guide {
-            position: absolute;
-            bottom: -60px;
-            width: 100%;
-            text-align: center;
-            color: #777;
-            font-size: 0.85rem;
-            letter-spacing: 0.05em;
+            z-index: 30;
         }
     </style>
 </head>
 <body>
 
-<div class="stack-container" id="stack">
-    <div class="card">
-        <div class="card-img" style="background: linear-gradient(45deg, #FF6B6B, #FF8E8E);">Apple</div>
-        <div class="card-content">
-            <h3>Apple Watch Series 11(GPSモデル)</h3>
-            <p>42mmローズゴールドアルミニウムケースとライトブラッシュスポーツバンド - S/M、睡眠時無呼吸、高血圧パターン、血中酸素、心電図、排卵推定、心拍数、服薬、マインドフルネス、ノイズ、睡眠スコア、転倒検出、IPX6X防塵、泳げる耐水、Suica対応、高速充電対応</p>
-            <a href="https://amzn.to/47EGhyD" class="card-btn">Amazonでチェック</a>
+    <div class="game-container">
+        <div class="score-container">
+            <span id="high-score">HI 00000</span>
+            <span id="score">00000</span>
         </div>
-    </div>
-    <div class="card">
-        <div class="card-img" style="background: linear-gradient(45deg, #4ECDC4, #55EFC4);">Apple</div>
-        <div class="card-content">
-            <h3>Apple AirPods Pro 3</h3>
-            <p>ワイヤレスイヤホン、アクティブノイズキャンセリング、ライブ翻訳、心拍センサー、補聴機能、Bluetoothヘッドホン、空間オーディオ サウンド、USB-C充電ケース、防塵性能と耐汗耐水性能、「探す」対応、Qi充電</p>
-            <a href="https://amzn.to/3PURxAQ" class="card-btn">Amazonでチェック</a>
-        </div>
-    </div>
-    <div class="card">
-        <div class="card-img" style="background: linear-gradient(45deg, #6C5CE7, #a29bfe);">CIO</div>
-        <div class="card-content">
-            <h3>CIO NovaPort TRIOⅡ 65W</h3>
-            <p>急速充電器 PD [世界最小級 CIO独自技術 NovaIntelligence NovaEngine搭載] 3ポート USB-C×3 ACアダプター コンセント 軽量 iPhone 17 / Air / 16 / 15 Android Galaxy Macbook iPad ノートPC (ブラック)</p>
-            <a href="https://amzn.to/3PP2lR3" class="card-btn">Amazonでチェック</a>
-        </div>
-    </div>
-    <div class="card">
-        <div class="card-img" style="background: linear-gradient(45deg, #FD9644, #feb47b);">Apple</div>
-        <div class="card-content">
-            <h3>Apple iPhone 17 256GB (SIMフリー)</h3>
-            <p>ProMotionを採用した6.3インチディスプレイ、A19チップ、グループセルフィーを一段とスマートに撮れるセンターフレームフロントカメラ、向上した耐擦傷性能、一日中使えるバッテリー；ホワイト</p>
-            <a href="https://amzn.to/4bUa2y1" class="card-btn">Amazonでチェック</a>
+
+        <a id="billboard" href="https://amzn.to/4eb0mjY" target="_blank">
+            SHOP NOW ON<br>AMAZON
+        </a>
+
+        <div id="dino"></div>
+        <div id="cactus"></div>
+
+        <div id="game-over-screen">
+            <h1>GAME OVER</h1>
+            <p style="color: white;">Press Space to Restart</p>
         </div>
     </div>
     
-    <div class="guide">ホイールまたはスワイプでめくる</div>
-</div>
+    <p>Press Space or Click to Jump!</p>
 
-<script>
-    const stack = document.getElementById('stack');
-    const cards = Array.from(stack.querySelectorAll('.card'));
-    let isAnimating = false;
+    <script>
+        const dino = document.getElementById("dino");
+        const cactus = document.getElementById("cactus");
+        const billboard = document.getElementById("billboard");
+        const gameOverScreen = document.getElementById("game-over-screen");
+        const scoreElement = document.getElementById("score");
+        const highScoreElement = document.getElementById("high-score");
+        const body = document.body;
 
-    function updateDisplay() {
-        cards.forEach((card, i) => {
-            card.className = 'card'; // クラスをリセット
-            if (i === 0) card.classList.add('pos-1');
-            else if (i === 1) card.classList.add('pos-2');
-            else if (i === 2) card.classList.add('pos-3');
-            else card.classList.add('pos-hidden');
+        let isGameOver = false;
+        let score = 0;
+        let highScore = localStorage.getItem("dino-hi-score") || 0;
+
+        highScoreElement.innerText = "HI " + String(highScore).padStart(5, '0');
+
+        let scoreTimer = setInterval(() => {
+            if (!isGameOver) {
+                score++;
+                scoreElement.innerText = String(score).padStart(5, '0');
+            }
+        }, 100);
+
+        setInterval(() => {
+            if (!isGameOver) body.classList.toggle("night-mode");
+        }, 15000); 
+
+        function handleAction() {
+            if (isGameOver) {
+                location.reload(); 
+            } else {
+                jump();
+            }
+        }
+
+        function jump() {
+            if (!dino.classList.contains("animate-jump")) {
+                dino.classList.add("animate-jump");
+                setTimeout(() => dino.classList.remove("animate-jump"), 500);
+            }
+        }
+
+        document.addEventListener("keydown", (e) => {
+            if (e.code === "Space") {
+                e.preventDefault();
+                handleAction();
+            }
         });
-    }
-    updateDisplay();
+        document.addEventListener("mousedown", (e) => {
+            if (e.target.id === "billboard") return;
+            handleAction();
+        });
 
-    function next() {
-        if (isAnimating) return;
-        isAnimating = true;
+        let checkDead = setInterval(() => {
+            let dinoRect = dino.getBoundingClientRect();
+            let cactusRect = cactus.getBoundingClientRect();
+            let dinoVisualWidth = 48; // 再現した恐竜の幅
+            let cactusVisualWidth = 24;
 
-        const current = cards[0];
-        current.classList.add('exit-up');
+            let dinoStyle = window.getComputedStyle(dino);
+            let dinoTransform = dinoStyle.getPropertyValue("transform");
+            let translateY = 0;
+            if (dinoTransform !== "none") {
+                let values = dinoTransform.split('(')[1].split(')')[0].split(',');
+                translateY = parseInt(values[5]);
+            }
 
-        setTimeout(() => {
-            const shifted = cards.shift();
-            cards.push(shifted);
-            updateDisplay();
-            isAnimating = false;
-        }, 500);
-    }
+            // X軸：恐竜の体とサボテンの衝突判定
+            let isHitX = cactusRect.left < dinoRect.left + dinoVisualWidth - 10 && 
+                         cactusRect.left + cactusVisualWidth > dinoRect.left + 5;
+            
+            // Y軸：足元がサボテンに触れる高さか
+            let isHitY = translateY > -36;
 
-    function prev() {
-        if (isAnimating) return;
-        isAnimating = true;
-
-        const popped = cards.pop();
-        cards.unshift(popped);
-        
-        // 戻る時は一旦上から降ってくる演出
-        cards[0].classList.add('exit-up');
-        updateDisplay();
-        
-        setTimeout(() => {
-            cards[0].classList.remove('exit-up');
-            isAnimating = false;
+            if (isHitX && isHitY) {
+                isGameOver = true;
+                cactus.style.animation = "none";
+                cactus.style.left = window.getComputedStyle(cactus).getPropertyValue("left");
+                billboard.style.animationPlayState = "paused";
+                gameOverScreen.style.display = "flex";
+                if (score > highScore) localStorage.setItem("dino-hi-score", score);
+                clearInterval(checkDead);
+                clearInterval(scoreTimer);
+            }
         }, 10);
-    }
-
-    // ホイール操作
-    window.addEventListener('wheel', (e) => {
-        if (Math.abs(e.deltaY) < 15) return;
-        e.deltaY > 0 ? next() : prev();
-    }, { passive: true });
-
-    // スワイプ操作
-    let startY = 0;
-    window.addEventListener('touchstart', (e) => startY = e.touches[0].clientY);
-    window.addEventListener('touchend', (e) => {
-        let diff = startY - e.changedTouches[0].clientY;
-        if (Math.abs(diff) > 40) diff > 0 ? next() : prev();
-    });
-</script>
-
+    </script>
 </body>
 </html>
